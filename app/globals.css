@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-white text-gray-700 font-light;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-mango-500 hover:bg-mango-600 text-white font-light text-sm px-6 py-2.5 tracking-[0.15em] transition-all duration-300;
+  }
+  .btn-outline {
+    @apply border border-mango-400 text-mango-500 hover:bg-mango-500 hover:text-white font-light text-sm px-6 py-2.5 tracking-[0.15em] transition-all duration-300;
+  }
+  .card {
+    @apply bg-white border border-gray-100 shadow-sm overflow-hidden;
+  }
+  .section-title {
+    @apply text-2xl md:text-3xl font-light text-gray-700 tracking-[0.12em];
+  }
+  .input-field {
+    @apply w-full border border-gray-200 rounded-none px-4 py-3 text-gray-700 font-light focus:outline-none focus:ring-1 focus:ring-mango-300 focus:border-mango-300 transition-all text-sm;
+  }
+}
