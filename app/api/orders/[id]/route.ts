@@ -50,7 +50,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       customerEmail: existing.customerEmail,
       ...(orderStatus && orderStatus !== existing.orderStatus ? { orderStatus } : {}),
       ...(paymentStatus && paymentStatus !== existing.paymentStatus ? { paymentStatus } : {}),
-    }).catch(console.error)
+    }).catch((err) => {
+      console.error('[Email] 狀態更新信寄送失敗:', existing.orderNumber, err?.message ?? err)
+    })
   }
 
   return NextResponse.json({

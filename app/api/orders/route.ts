@@ -94,7 +94,9 @@ export async function POST(req: NextRequest) {
       shipping: order.shipping,
       total: order.total,
       deliveryAddress: order.deliveryAddress,
-    }).catch(console.error)
+    }).catch((err) => {
+      console.error('[Email] 訂單確認信寄送失敗:', order.orderNumber, err?.message ?? err)
+    })
 
     return NextResponse.json({ orderId: order.id, orderNumber: order.orderNumber }, { status: 201 })
   } catch (err) {
