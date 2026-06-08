@@ -52,6 +52,7 @@ export default function AdminPage() {
   // Stock
   const [stockMap, setStockMap] = useState<Record<string, StockRecord>>({})
   const [savingStock, setSavingStock] = useState<string | null>(null)
+  const [stockSaveResult, setStockSaveResult] = useState<Record<string, 'ok' | 'err'>>({})
   const [activeTab, setActiveTab] = useState<'orders' | 'stock'>('orders')
 
   const fetchOrders = useCallback(async (pw: string) => {
@@ -154,11 +155,16 @@ export default function AdminPage() {
     setSavingStock(variantId)
     try {
       const s = stockMap[variantId]
-      await fetch('/api/stock', {
+      const res = await fetch('/api/stock', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: password },
         body: JSON.stringify({ variantId, available: s.available, stock: s.stock }),
       })
+      setStockSaveResult((prev) => ({ ...prev, [variantId]: res.ok ? 'ok' : 'err' }))
+      setTimeout(() => setStockSaveResult((prev) => { const next = { ...prev }; delete next[variantId]; return next }), 2500)
+    } catch {
+      setStockSaveResult((prev) => ({ ...prev, [variantId]: 'err' }))
+      setTimeout(() => setStockSaveResult((prev) => { const next = { ...prev }; delete next[variantId]; return next }), 2500)
     } finally {
       setSavingStock(null)
     }
@@ -502,13 +508,21 @@ export default function AdminPage() {
                             <span className="text-xs text-gray-400 tracking-wider">箱（0=不限）</span>
                           </div>
 
-                          <button
-                            onClick={() => handleSaveStock(variant.id)}
-                            disabled={savingStock === variant.id}
-                            className="text-xs px-3 py-1.5 bg-mango-500 text-white hover:bg-mango-600 transition-colors disabled:opacity-50 tracking-wider"
-                          >
-                            {savingStock === variant.id ? '儲存中…' : '儲存'}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSaveStock(variant.id)}
+                              disabled={savingStock === variant.id}
+                              className="text-xs px-3 py-1.5 bg-mango-500 text-white hover:bg-mango-600 transition-colors disabled:opacity-50 tracking-wider"
+                            >
+                              {savingStock === variant.id ? '儲存中…' : '儲存'}
+                            </button>
+                            {stockSaveResult[variant.id] === 'ok' && (
+                              <span className="text-xs text-green-600 tracking-wider">✓ 已儲存</span>
+                            )}
+                            {stockSaveResult[variant.id] === 'err' && (
+                              <span className="text-xs text-red-500 tracking-wider">✗ 失敗</span>
+                            )}
+                          </div>
                         </div>
                       )
                     })

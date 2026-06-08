@@ -45,7 +45,7 @@ export default function OrderPage() {
         data.forEach((s) => { map[s.variantId] = s })
         setStockMap(map)
       })
-      .catch(() => {})
+      .catch((err) => console.error('[Stock] fetch failed:', err))
   }, [])
 
   // 判斷某 variant 是否可訂購
