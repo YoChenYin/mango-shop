@@ -9,11 +9,11 @@ export interface Product {
   name: string
   nameEn: string
   description: string
-  available: boolean
+  available: boolean   // 預設值；未有 DB 庫存記錄時使用此欄位
   season: string
   variants: ProductVariant[]
   emoji: string
-  shippingDays: string   // 可隨時在此更新出貨等待時間
+  shippingDays: string
 }
 
 export const PRODUCTS: Product[] = [
@@ -27,7 +27,9 @@ export const PRODUCTS: Product[] = [
     emoji: '',
     shippingDays: '產季剛開始，約兩週後開始穩定出貨',
     variants: [
-      { id: 'aiwen-s', name: '愛文參號（10 台斤）', price: 600 },
+      { id: 'aiwen-premium',  name: '嚴選（10 台斤）', price: 950 },
+      { id: 'aiwen-select',   name: '精選（10 台斤）', price: 800 },
+      { id: 'aiwen-standard', name: '普選（10 台斤）', price: 650 },
     ],
   },
   {
@@ -40,30 +42,34 @@ export const PRODUCTS: Product[] = [
     emoji: '',
     shippingDays: '5-8 工作天',
     variants: [
-      { id: 'yuwen-s', name: '玉文貳號（10 台斤）', price: 700 },
-      { id: 'yuwen-l', name: '玉文壹號（10 台斤）', price: 800 },
+      { id: 'yuwen-premium', name: '嚴選（10 台斤）', price: 800 },
+      { id: 'yuwen-select',  name: '精選（10 台斤）', price: 700 },
     ],
   },
   {
     id: 'peach',
     name: '水蜜桃芒果',
     nameEn: 'Peach Mango',
-    description: '果香如水蜜桃般清甜，細緻甜美',
-    available: false,
+    description: '果香如水蜜桃般清甜，細緻甜美，限量供應',
+    available: false,   // 預設關閉；後台開啟後前台即生效
     season: '即將開放',
     emoji: '',
     shippingDays: '—',
-    variants: [],
+    variants: [
+      { id: 'peach-select', name: '精選（10 台斤）', price: 900 },
+    ],
   },
   {
     id: 'wuxiang',
     name: '烏香芒果',
     nameEn: 'Wuxiang Mango',
     description: '香氣獨特迷人，台灣傳統珍貴品種',
-    available: false,
+    available: false,   // 預設關閉；後台開啟後前台即生效
     season: '即將開放',
     emoji: '',
     shippingDays: '—',
-    variants: [],
+    variants: [
+      { id: 'wuxiang-select', name: '精選（10 台斤）', price: 800 },
+    ],
   },
 ]

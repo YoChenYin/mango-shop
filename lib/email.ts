@@ -153,7 +153,7 @@ export async function sendStatusUpdate(data: StatusUpdateData) {
         ${statusInfo}
       </div>
 
-      ${isShipped ? '<p style="color:#444;font-size:14px;">您的訂單已安排出貨，預計 1-3 個工作天送達，請保持手機暢通，方便物流配送聯繫。</p>' : ''}
+      ${isShipped ? '<p style="color:#444;font-size:14px;">您的訂單已出貨，預計明天送達，請保持手機暢通，方便物流配送聯繫，若隔日五點前未送達請與我們聯繫。芒果收到後請立即拆箱將芒果取出，芒果霧感稍退即可進冰箱保存</p>' : ''}
       ${isPaid ? '<p style="color:#444;font-size:14px;">已確認收到您的付款，我們將盡快為您安排出貨，感謝您的耐心等候。</p>' : ''}
 
       <p style="margin:24px 0 0;color:#888;font-size:13px;">如有任何疑問，歡迎回覆此信聯繫我們。</p>
