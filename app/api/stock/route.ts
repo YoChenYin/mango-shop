@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/stock – public: get all variant stock
 export async function GET() {
   const stocks = await prisma.productStock.findMany()
