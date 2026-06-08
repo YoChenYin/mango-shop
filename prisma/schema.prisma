@@ -48,5 +48,9 @@ model OrderItem {
   subtotal    Float
 }
 
-// NOTE: SQLite 本地開發用 String 取代 enum
-// Zeabur 部署時請改回 postgresql provider 並還原 enum 型別
+model ProductStock {
+  variantId   String   @id
+  available   Boolean  @default(true)
+  stock       Int      @default(0)   // 0 = 不限量；> 0 = 限量
+  updatedAt   DateTime @updatedAt
+}

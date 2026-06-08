@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendStatusUpdate } from '@/lib/email'
 
+// DELETE /api/orders/[id] – admin: delete order
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const pw = _req.headers.get('Authorization')
+  if (!pw || pw !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: '未授權' }, { status: 401 })
+  }
+
+  const existing = await prisma.order.findUnique({ where: { id: params.id } })
+  if (!existing) return NextResponse.json({ error: '找不到訂單' }, { status: 404 })
+
+  await prisma.orderItem.deleteMany({ where: { orderId: params.id } })
+  await prisma.order.delete({ where: { id: params.id } })
+
+  return NextResponse.json({ ok: true })
+}
+
 // GET /api/orders/[id] – public: get single order for success page
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({

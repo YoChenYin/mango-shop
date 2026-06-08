@@ -82,7 +82,7 @@ export async function sendOrderConfirmation(order: OrderEmailData) {
         <p style="margin:4px 0;font-size:14px;"><strong>銀行：</strong>新光銀行 (103)</p>
         <p style="margin:4px 0;font-size:14px;"><strong>帳號：</strong>1049500192076</p>
         <p style="margin:4px 0;font-size:14px;"><strong>金額：</strong>NT$ ${order.total.toLocaleString()}</p>
-        <p style="margin:12px 0 0;font-size:13px;color:#888;">請完成匯款後，提供匯款末五碼或截圖作為付款憑證</p>
+        <p style="margin:12px 0 0;font-size:13px;color:#888;">請完成匯款後，提供匯款末五碼或截圖作為付款憑證 (若已付款請稍等我們對帳，會再寄出一封匯款確認信)</p>
       </div>
 
       <p style="margin:24px 0 0;color:#888;font-size:13px;">如有任何問題，歡迎與我們聯繫。<br>收到款項後我們會盡快為您安排出貨。</p>
