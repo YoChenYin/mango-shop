@@ -51,7 +51,7 @@ export const PRODUCTS: Product[] = [
     name: '水蜜桃芒果',
     nameEn: 'Peach Mango',
     description: '果香如水蜜桃般清甜，細緻甜美，限量供應',
-    available: false,   // 預設關閉；後台開啟後前台即生效
+    available: true,   // 預設關閉；後台開啟後前台即生效
     season: '6月 - 7月',
     emoji: '',
     shippingDays: '5 工作天',
@@ -65,7 +65,7 @@ export const PRODUCTS: Product[] = [
     name: '烏香芒果',
     nameEn: 'Wuxiang Mango',
     description: '香氣獨特迷人，台灣傳統珍貴品種',
-    available: true,   // 預設關閉；後台開啟後前台即生效
+    available: false,   // 預設關閉；後台開啟後前台即生效
     season: '6/21 左右結束',
     emoji: '',
     shippingDays: '5 工作天',
