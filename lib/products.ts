@@ -83,9 +83,9 @@ export const PRODUCTS: Product[] = [
     emoji: '',
     shippingDays: '5-8 工作天',
     variants: [
-      { id: 'wuxiang-peach-premium', name: '嚴選（10 台斤）', price: 800 },
-      { id: 'wuxiang-peach-select', name: '精選（10 台斤）', price: 700 },
-      { id: 'aiwen-peach-standard', name: '普選（10 台斤）', price: 650 },
+      { id: 'wuxiang-peach-premium', name: '[玉文水蜜桃芒]嚴選（10 台斤）', price: 800 },
+      { id: 'wuxiang-peach-select', name: '[玉文水蜜桃芒]精選（10 台斤）', price: 700 },
+      { id: 'aiwen-peach-standard', name: '[愛文水蜜桃芒]普選（10 台斤）', price: 650 },
     ],
   },
 ]
