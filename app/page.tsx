@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { PRODUCTS } from '@/lib/products'
+import { PRODUCTS, HOME_FEATURED_PRODUCT_IDS } from '@/lib/products'
+import { prisma } from '@/lib/prisma'
+import { isVariantAvailable, StockRecord } from '@/lib/stock'
+
+export const dynamic = 'force-dynamic'
 
 const PRODUCT_IMAGES: Record<string, string> = {
   aiwen: '/images/aiwen.jpg',
@@ -16,7 +20,20 @@ const REVIEWS = [
   { stars: 5, text: '每年都在等這家的芒果' },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const stocks = await prisma.productStock.findMany()
+  const stockMap: Record<string, StockRecord> = {}
+  stocks.forEach((s) => { stockMap[s.variantId] = s })
+
+  // 首頁只顯示當季開放品項，並移除已暫停接單的規格；若品項所有規格都暫停接單則整個品項不顯示
+  const homeProducts = PRODUCTS
+    .filter((p) => HOME_FEATURED_PRODUCT_IDS.includes(p.id))
+    .map((p) => ({
+      ...p,
+      variants: p.variants.filter((v) => isVariantAvailable(p.available, stockMap, v.id)),
+    }))
+    .filter((p) => p.variants.length > 0)
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -101,11 +118,8 @@ export default function HomePage() {
             <div className="w-8 h-px bg-mango-300 mx-auto mt-6" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {PRODUCTS.map((product) => (
-              <div
-                key={product.id}
-                className={`card group transition-all duration-300 hover:shadow-md ${!product.available ? 'opacity-60' : ''}`}
-              >
+            {homeProducts.map((product) => (
+              <div key={product.id} className="card group transition-all duration-300 hover:shadow-md">
                 <div className="relative h-52 overflow-hidden">
                   {PRODUCT_IMAGES[product.id] ? (
                     <Image
@@ -115,49 +129,32 @@ export default function HomePage() {
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   ) : (
-                    <div className={`h-full flex items-center justify-center text-5xl ${product.available ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                    <div className="h-full flex items-center justify-center text-5xl bg-amber-50">
                       {product.emoji}
                     </div>
                   )}
-                  {!product.available && <div className="absolute inset-0 bg-white/25" />}
                 </div>
                 <div className="p-5">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-medium text-gray-800 text-sm tracking-wide">{product.name}</h3>
-                    {!product.available && (
-                      <span className="text-[10px] text-gray-400 border border-gray-200 px-2 py-0.5 tracking-wider ml-2 whitespace-nowrap">即將開放</span>
-                    )}
-                  </div>
+                  <h3 className="font-medium text-gray-800 text-sm tracking-wide mb-1">{product.name}</h3>
                   <p className="text-[10px] text-gray-400 tracking-[0.25em] mb-2">{product.nameEn}</p>
                   <p className="text-xs text-gray-500 mb-3 leading-relaxed">{product.description}</p>
                   <p className="text-[10px] text-mango-400 tracking-[0.2em] mb-4">{product.season}</p>
 
-                  {product.available && product.variants.length > 0 && (
-                    <div className="space-y-1.5 mb-4 border-t border-gray-100 pt-3">
-                      {product.variants.map((v) => (
-                        <div key={v.id} className="flex justify-between text-xs">
-                          <span className="text-gray-400 font-light">{v.name}</span>
-                          <span className="text-gray-700">NT$ {v.price.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="space-y-1.5 mb-4 border-t border-gray-100 pt-3">
+                    {product.variants.map((v) => (
+                      <div key={v.id} className="flex justify-between text-xs">
+                        <span className="text-gray-400 font-light">{v.name}</span>
+                        <span className="text-gray-700">NT$ {v.price.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                  {product.available ? (
-                    <Link
-                      href="/order"
-                      className="block text-center text-xs border border-mango-400 text-mango-500 hover:bg-mango-500 hover:text-white transition-all duration-200 py-2.5 tracking-[0.2em]"
-                    >
-                      加入訂單
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full text-xs text-gray-300 border border-gray-200 py-2.5 cursor-not-allowed tracking-[0.2em]"
-                    >
-                      即將開放
-                    </button>
-                  )}
+                  <Link
+                    href="/order"
+                    className="block text-center text-xs border border-mango-400 text-mango-500 hover:bg-mango-500 hover:text-white transition-all duration-200 py-2.5 tracking-[0.2em]"
+                  >
+                    加入訂單
+                  </Link>
                 </div>
               </div>
             ))}
@@ -173,15 +170,12 @@ export default function HomePage() {
             <h2 className="section-title">出貨等待時間</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {PRODUCTS.map((product) => (
+            {homeProducts.map((product) => (
               <div key={product.id} className="flex items-center justify-between py-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-light text-gray-700 tracking-wide">{product.name}</span>
-                  {!product.available && (
-                    <span className="text-[10px] text-gray-400 border border-gray-200 px-2 py-0.5 tracking-wider">即將開放</span>
-                  )}
                 </div>
-                <span className={`text-sm tracking-wider ${product.available ? 'text-mango-500' : 'text-gray-300'}`}>
+                <span className="text-sm tracking-wider text-mango-500">
                   {product.shippingDays}
                 </span>
               </div>

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PRODUCTS } from '@/lib/products'
-import { calculateShipping } from '@/lib/shipping'
+import { calculateShipping, calculateShippingDiscount, ShippingDiscountRule } from '@/lib/shipping'
 
 interface CartItem {
   variantId: string
@@ -25,6 +25,8 @@ export default function OrderPage() {
   const router = useRouter()
   const [cart, setCart] = useState<Record<string, CartItem>>({})
   const [stockMap, setStockMap] = useState<Record<string, StockRecord>>({})
+  const [shippingDiscountEnabled, setShippingDiscountEnabled] = useState(false)
+  const [shippingDiscountRules, setShippingDiscountRules] = useState<ShippingDiscountRule[]>([])
 
   const [orderer, setOrderer] = useState({ name: '', email: '', phone: '' })
   const [recipient, setRecipient] = useState({ name: '', phone: '', address: '', noHolidayDelivery: false })
@@ -46,6 +48,17 @@ export default function OrderPage() {
         setStockMap(map)
       })
       .catch((err) => console.error('[Stock] fetch failed:', err))
+  }, [])
+
+  // 讀取後台運費優惠設定
+  useEffect(() => {
+    fetch('/api/shipping-discount')
+      .then((r) => r.json())
+      .then((data: { enabled: boolean; rules: ShippingDiscountRule[] }) => {
+        setShippingDiscountEnabled(data.enabled)
+        setShippingDiscountRules(data.rules)
+      })
+      .catch((err) => console.error('[ShippingDiscount] fetch failed:', err))
   }, [])
 
   // 判斷某 variant 是否可訂購
@@ -79,7 +92,9 @@ export default function OrderPage() {
   const cartItems = Object.values(cart)
   const totalBoxes = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = calculateShipping(totalBoxes)
+  const shippingBeforeDiscount = calculateShipping(totalBoxes)
+  const shippingDiscount = calculateShippingDiscount(cartItems, shippingDiscountEnabled, shippingDiscountRules, shippingBeforeDiscount)
+  const shipping = shippingBeforeDiscount - shippingDiscount
   const total = subtotal + shipping
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -358,8 +373,14 @@ export default function OrderPage() {
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
                     <span className="tracking-wide">運費{totalBoxes > 0 && <span className="text-gray-400 ml-1">({totalBoxes} 箱)</span>}</span>
-                    <span>{totalBoxes > 0 ? `NT$ ${shipping.toLocaleString()}` : '—'}</span>
+                    <span>{totalBoxes > 0 ? `NT$ ${shippingBeforeDiscount.toLocaleString()}` : '—'}</span>
                   </div>
+                  {shippingDiscount > 0 && (
+                    <div className="flex justify-between text-xs text-mango-500">
+                      <span className="tracking-wide">運費優惠</span>
+                      <span>− NT$ {shippingDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                     <span className="text-gray-700 tracking-wide">合計</span>
                     <span className="text-mango-500 font-medium">{total > 0 ? `NT$ ${total.toLocaleString()}` : '—'}</span>

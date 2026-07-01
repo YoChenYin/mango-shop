@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { PRODUCTS } from '@/lib/products'
+import { ShippingDiscountRule } from '@/lib/shipping'
 
 type OrderStatus = 'PROCESSING' | 'SHIPPED'
 type PaymentStatus = 'PAID' | 'UNPAID'
@@ -53,7 +54,19 @@ export default function AdminPage() {
   const [stockMap, setStockMap] = useState<Record<string, StockRecord>>({})
   const [savingStock, setSavingStock] = useState<string | null>(null)
   const [stockSaveResult, setStockSaveResult] = useState<Record<string, 'ok' | 'err'>>({})
-  const [activeTab, setActiveTab] = useState<'orders' | 'stock'>('orders')
+  const [activeTab, setActiveTab] = useState<'orders' | 'stock' | 'shipping'>('orders')
+
+  // Shipping discount
+  const [shippingEnabled, setShippingEnabled] = useState(false)
+  const [savingShippingToggle, setSavingShippingToggle] = useState(false)
+  const [shippingRules, setShippingRules] = useState<ShippingDiscountRule[]>([])
+  const [ruleEditMap, setRuleEditMap] = useState<Record<string, { minBoxes: string; discountAmount: string }>>({})
+  const [savingRuleId, setSavingRuleId] = useState<string | null>(null)
+  const [ruleSaveResult, setRuleSaveResult] = useState<Record<string, 'ok' | 'err'>>({})
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null)
+  const [newRule, setNewRule] = useState({ productId: '', minBoxes: '', discountAmount: '' })
+  const [addingRule, setAddingRule] = useState(false)
+  const [addRuleError, setAddRuleError] = useState('')
 
   const fetchOrders = useCallback(async (pw: string) => {
     setLoading(true)
@@ -83,6 +96,17 @@ export default function AdminPage() {
     setStockMap(map)
   }, [])
 
+  const fetchShippingDiscount = useCallback(async () => {
+    const res = await fetch('/api/shipping-discount')
+    if (!res.ok) return
+    const data: { enabled: boolean; rules: ShippingDiscountRule[] } = await res.json()
+    setShippingEnabled(data.enabled)
+    setShippingRules(data.rules)
+    const editMap: Record<string, { minBoxes: string; discountAmount: string }> = {}
+    data.rules.forEach((r) => { editMap[r.id] = { minBoxes: String(r.minBoxes), discountAmount: String(r.discountAmount) } })
+    setRuleEditMap(editMap)
+  }, [])
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     sessionStorage.setItem('admin_pw', password)
@@ -98,8 +122,9 @@ export default function AdminPage() {
     if (authed && password) {
       fetchOrders(password)
       fetchStock()
+      fetchShippingDiscount()
     }
-  }, [authed, password, fetchOrders, fetchStock])
+  }, [authed, password, fetchOrders, fetchStock, fetchShippingDiscount])
 
   const handleStatusUpdate = async (orderId: string, field: 'orderStatus' | 'paymentStatus', value: string) => {
     setUpdating(orderId + field)
@@ -170,6 +195,84 @@ export default function AdminPage() {
     }
   }
 
+  const handleToggleShippingEnabled = async () => {
+    const next = !shippingEnabled
+    setSavingShippingToggle(true)
+    try {
+      const res = await fetch('/api/shipping-discount', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: password },
+        body: JSON.stringify({ enabled: next }),
+      })
+      if (res.ok) setShippingEnabled(next)
+    } finally {
+      setSavingShippingToggle(false)
+    }
+  }
+
+  const handleAddRule = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAddRuleError('')
+    const minBoxes = parseInt(newRule.minBoxes)
+    const discountAmount = parseInt(newRule.discountAmount)
+    if (!minBoxes || minBoxes <= 0 || !discountAmount || discountAmount <= 0) {
+      setAddRuleError('請輸入正確的箱數與折抵金額')
+      return
+    }
+    setAddingRule(true)
+    try {
+      const res = await fetch('/api/shipping-discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: password },
+        body: JSON.stringify({ productId: newRule.productId || null, minBoxes, discountAmount }),
+      })
+      if (res.ok) {
+        setNewRule({ productId: '', minBoxes: '', discountAmount: '' })
+        await fetchShippingDiscount()
+      } else {
+        setAddRuleError('新增失敗，請稍後再試')
+      }
+    } finally {
+      setAddingRule(false)
+    }
+  }
+
+  const handleUpdateRule = async (rule: ShippingDiscountRule) => {
+    const edit = ruleEditMap[rule.id]
+    const minBoxes = parseInt(edit?.minBoxes ?? '')
+    const discountAmount = parseInt(edit?.discountAmount ?? '')
+    if (!minBoxes || minBoxes <= 0 || !discountAmount || discountAmount <= 0) {
+      setRuleSaveResult((prev) => ({ ...prev, [rule.id]: 'err' }))
+      return
+    }
+    setSavingRuleId(rule.id)
+    try {
+      const res = await fetch(`/api/shipping-discount/${rule.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: password },
+        body: JSON.stringify({ productId: rule.productId, minBoxes, discountAmount }),
+      })
+      setRuleSaveResult((prev) => ({ ...prev, [rule.id]: res.ok ? 'ok' : 'err' }))
+      if (res.ok) await fetchShippingDiscount()
+      setTimeout(() => setRuleSaveResult((prev) => { const next = { ...prev }; delete next[rule.id]; return next }), 2500)
+    } finally {
+      setSavingRuleId(null)
+    }
+  }
+
+  const handleDeleteRule = async (ruleId: string) => {
+    setDeletingRuleId(ruleId)
+    try {
+      const res = await fetch(`/api/shipping-discount/${ruleId}`, {
+        method: 'DELETE',
+        headers: { Authorization: password },
+      })
+      if (res.ok) await fetchShippingDiscount()
+    } finally {
+      setDeletingRuleId(null)
+    }
+  }
+
   const filteredOrders = orders.filter((o) => {
     if (filter === 'ALL') return true
     if (filter === 'PROCESSING' || filter === 'SHIPPED') return o.orderStatus === filter
@@ -218,7 +321,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchOrders(password); fetchStock() }}
+              onClick={() => { fetchOrders(password); fetchStock(); fetchShippingDiscount() }}
               className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 px-3 py-1.5 tracking-wider transition-colors"
             >
               重新整理
@@ -233,7 +336,7 @@ export default function AdminPage() {
         </div>
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-6 flex gap-6 border-t border-gray-100">
-          {(['orders', 'stock'] as const).map((tab) => (
+          {(['orders', 'stock', 'shipping'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -243,7 +346,7 @@ export default function AdminPage() {
                   : 'border-transparent text-gray-400 hover:text-gray-600'
               }`}
             >
-              {tab === 'orders' ? '訂單管理' : '庫存管理'}
+              {tab === 'orders' ? '訂單管理' : tab === 'stock' ? '庫存管理' : '運費優惠'}
             </button>
           ))}
         </div>
@@ -530,6 +633,134 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── 運費優惠 ── */}
+        {activeTab === 'shipping' && (
+          <div className="max-w-2xl">
+            <p className="text-xs text-gray-400 tracking-wider mb-6">
+              設定達到指定箱數即可折抵運費的規則。「適用品項」選擇特定品項時，只計算該品項的箱數；選擇「全部品項（加總）」時計算購物車全部箱數。同時符合多條規則時，折抵金額會加總（但不會超過原始運費）。
+            </p>
+
+            <div className="bg-white border border-gray-100 p-4 mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 tracking-wide">啟用運費優惠</p>
+                <p className="text-xs text-gray-400 mt-0.5 tracking-wide">關閉後，即使有設定規則也不會折抵運費</p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shippingEnabled}
+                  disabled={savingShippingToggle}
+                  onChange={handleToggleShippingEnabled}
+                  className="w-4 h-4"
+                />
+                <span className={`text-xs tracking-wider ${shippingEnabled ? 'text-green-600' : 'text-gray-400'}`}>
+                  {shippingEnabled ? '已啟用' : '已關閉'}
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-2 mb-6">
+              {shippingRules.length === 0 ? (
+                <p className="text-xs text-gray-400 tracking-wider">尚未設定任何規則</p>
+              ) : (
+                shippingRules.map((rule) => {
+                  const edit = ruleEditMap[rule.id] ?? { minBoxes: String(rule.minBoxes), discountAmount: String(rule.discountAmount) }
+                  const productName = rule.productId
+                    ? PRODUCTS.find((p) => p.id === rule.productId)?.name ?? rule.productId
+                    : '全部品項（加總）'
+                  return (
+                    <div key={rule.id} className="bg-white border border-gray-100 p-4 flex flex-wrap items-center gap-4">
+                      <span className="text-xs text-gray-600 flex-1 min-w-[140px] tracking-wide">{productName}</span>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-400 tracking-wider whitespace-nowrap">達</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={edit.minBoxes}
+                          onChange={(e) => setRuleEditMap((prev) => ({ ...prev, [rule.id]: { ...edit, minBoxes: e.target.value } }))}
+                          className="w-16 border border-gray-200 px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-mango-300"
+                        />
+                        <span className="text-xs text-gray-400 tracking-wider whitespace-nowrap">箱，折抵</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={edit.discountAmount}
+                          onChange={(e) => setRuleEditMap((prev) => ({ ...prev, [rule.id]: { ...edit, discountAmount: e.target.value } }))}
+                          className="w-20 border border-gray-200 px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-mango-300"
+                        />
+                        <span className="text-xs text-gray-400 tracking-wider whitespace-nowrap">元</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          onClick={() => handleUpdateRule(rule)}
+                          disabled={savingRuleId === rule.id}
+                          className="text-xs px-3 py-1.5 bg-mango-500 text-white hover:bg-mango-600 transition-colors disabled:opacity-50 tracking-wider"
+                        >
+                          {savingRuleId === rule.id ? '儲存中…' : '儲存'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRule(rule.id)}
+                          disabled={deletingRuleId === rule.id}
+                          className="text-xs px-3 py-1.5 text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-300 transition-colors disabled:opacity-50 tracking-wider"
+                        >
+                          {deletingRuleId === rule.id ? '刪除中…' : '刪除'}
+                        </button>
+                        {ruleSaveResult[rule.id] === 'ok' && <span className="text-xs text-green-600 tracking-wider">✓</span>}
+                        {ruleSaveResult[rule.id] === 'err' && <span className="text-xs text-red-500 tracking-wider">✗</span>}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <form onSubmit={handleAddRule} className="bg-white border border-gray-100 p-4">
+              <p className="text-xs font-medium text-gray-600 tracking-wider mb-3">新增規則</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={newRule.productId}
+                  onChange={(e) => setNewRule((p) => ({ ...p, productId: e.target.value }))}
+                  className="text-xs border border-gray-200 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-mango-300"
+                >
+                  <option value="">全部品項（加總）</option>
+                  {PRODUCTS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <span className="text-xs text-gray-400 tracking-wider">達</span>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="箱數"
+                  value={newRule.minBoxes}
+                  onChange={(e) => setNewRule((p) => ({ ...p, minBoxes: e.target.value }))}
+                  className="w-20 border border-gray-200 px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-mango-300"
+                />
+                <span className="text-xs text-gray-400 tracking-wider">箱，折抵</span>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="金額"
+                  value={newRule.discountAmount}
+                  onChange={(e) => setNewRule((p) => ({ ...p, discountAmount: e.target.value }))}
+                  className="w-20 border border-gray-200 px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-mango-300"
+                />
+                <span className="text-xs text-gray-400 tracking-wider">元</span>
+                <button
+                  type="submit"
+                  disabled={addingRule}
+                  className="text-xs px-4 py-1.5 bg-mango-500 text-white hover:bg-mango-600 transition-colors disabled:opacity-50 tracking-wider ml-auto"
+                >
+                  {addingRule ? '新增中…' : '新增規則'}
+                </button>
+              </div>
+              {addRuleError && <p className="text-xs text-red-500 mt-2 tracking-wide">{addRuleError}</p>}
+            </form>
           </div>
         )}
       </div>

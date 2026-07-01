@@ -54,3 +54,17 @@ model ProductStock {
   stock       Int      @default(0)   // 0 = 不限量；> 0 = 限量
   updatedAt   DateTime @updatedAt
 }
+
+model ShippingDiscountSetting {
+  id        Int      @id @default(1)
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model ShippingDiscountRule {
+  id             String   @id @default(cuid())
+  productId      String?  // null = 全部品項加總箱數；有值 = 僅計算該品項箱數
+  minBoxes       Int
+  discountAmount Int
+  createdAt      DateTime @default(now())
+}

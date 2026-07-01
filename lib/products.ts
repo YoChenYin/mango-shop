@@ -30,6 +30,7 @@ export const PRODUCTS: Product[] = [
       { id: 'aiwen-premium',  name: '嚴選（10 台斤）', price: 950 },
       { id: 'aiwen-select',   name: '精選（10 台斤）', price: 800 },
       { id: 'aiwen-standard', name: '普選（10 台斤）', price: 650 },
+      { id: 'aiwen-blessing', name: '惜福果（10 台斤）', price: 500 },
     ],
   },
   {
@@ -89,3 +90,6 @@ export const PRODUCTS: Product[] = [
     ],
   },
 ]
+
+// 首頁「當季品項」只顯示這些品項（玉文、烏香等非當季/未開放品項不在首頁露出）
+export const HOME_FEATURED_PRODUCT_IDS = ['aiwen', 'peach', 'mix']
