@@ -19,16 +19,16 @@ export interface Product {
 export const PRODUCTS: Product[] = [
   {
     id: 'aiwen',
-    name: '愛文芒果',
+    name: '[舅舅家的]愛文芒果',
     nameEn: 'Irwin Mango',
     description: '香甜多汁，為台灣芒果之王，台南玉井最具代表性品種',
     available: true,
     season: '6月 - 7月',
     emoji: '',
-    shippingDays: '約 7- 14 工作天出貨(隨天氣動態調整)',
+    shippingDays: '今天出貨',
     variants: [
-      { id: 'aiwen-premium',  name: '嚴選（10 台斤）', price: 950 },
-      { id: 'aiwen-select',   name: '精選（10 台斤）', price: 800 },
+      { id: 'aiwen-premium',  name: '嚴選（10 台斤）', price: 1000 },
+      { id: 'aiwen-select',   name: '精選（10 台斤）', price: 700 },
       { id: 'aiwen-standard', name: '普選（10 台斤）', price: 650 },
       { id: 'aiwen-blessing', name: '惜福果（10 台斤）', price: 500 },
     ],
